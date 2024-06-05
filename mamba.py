@@ -64,16 +64,23 @@ def load_model(pretrained_model_name: str) -> Mamba:
 
     def load_config_hf(model_name):
         resolved_archive_file = cached_file(
-            model_name, CONFIG_NAME, _raise_exceptions_for_missing_entries=False
+            model_name,
+            CONFIG_NAME,
+            _raise_exceptions_for_missing_entries=False,
         )
         return json.load(open(resolved_archive_file))
 
     def load_state_dict_hf(model_name):
         resolved_archive_file = cached_file(
-            model_name, WEIGHTS_NAME, _raise_exceptions_for_missing_entries=False
+            model_name,
+            WEIGHTS_NAME,
+            _raise_exceptions_for_missing_entries=False,
         )
         return torch.load(
-            resolved_archive_file, weights_only=True, map_location="cpu", mmap=True
+            resolved_archive_file,
+            weights_only=True,
+            map_location="cpu",
+            mmap=True,
         )
 
     config_data = load_config_hf(pretrained_model_name)
@@ -152,7 +159,9 @@ class Mamba:
         """
         self.args = args
         self.embedding = Embedding(weight=weights.get("embedding.weight"))
-        self.layers = [ResidualBlock(i, weights, args) for i in range(args.n_layer)]
+        self.layers = [
+            ResidualBlock(i, weights, args) for i in range(args.n_layer)
+        ]
         self.norm_f = RMSNorm(weight=weights.get("norm_f.weight"))
 
         # Tie output projection to embedding weights.
@@ -206,14 +215,16 @@ class ResidualBlock:
         self.args = args
         self.mixer = MambaBlock(
             in_proj=Linear(
-                weight=weights.get(f"layers.{layer_id}.mixer.in_proj.weight"), bias=None
+                weight=weights.get(f"layers.{layer_id}.mixer.in_proj.weight"),
+                bias=None,
             ),
             conv1d=MambaConv1d(
                 weight=weights.get(f"layers.{layer_id}.mixer.conv1d.weight"),
                 bias=weights.get(f"layers.{layer_id}.mixer.conv1d.bias"),
             ),
             x_proj=Linear(
-                weight=weights.get(f"layers.{layer_id}.mixer.x_proj.weight"), bias=None
+                weight=weights.get(f"layers.{layer_id}.mixer.x_proj.weight"),
+                bias=None,
             ),
             dt_proj=Linear(
                 weight=weights.get(f"layers.{layer_id}.mixer.dt_proj.weight"),
@@ -228,7 +239,9 @@ class ResidualBlock:
             args=args,
         )
 
-        self.norm = RMSNorm(weight=weights.get(f"layers.{layer_id}.norm.weight"))
+        self.norm = RMSNorm(
+            weight=weights.get(f"layers.{layer_id}.norm.weight")
+        )
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
         """
@@ -354,7 +367,9 @@ class MambaBlock:
                 self.args.dt_rank + 2 * n,
             ),
             axis=-1,
-        )[:-1]  # delta: (b, l, dt_rank). B, C: (b, l, n)
+        )[
+            :-1
+        ]  # delta: (b, l, dt_rank). B, C: (b, l, n)
         delta = softplus(self.dt_proj(delta))  # (b, l, d_in)
 
         y = self.selective_scan(
@@ -409,7 +424,9 @@ class MambaBlock:
 
         # Discretize continuous parameters (A, B)
         deltaA = np.exp(einsum(delta, A, "b l d_in, d_in n -> b l d_in n"))
-        deltaB_u = einsum(delta, B, u, "b l d_in, b l n, b l d_in -> b l d_in n")
+        deltaB_u = einsum(
+            delta, B, u, "b l d_in, b l n, b l d_in -> b l d_in n"
+        )
 
         # Perform selective scan (see scan_SSM() in The Annotated S4 [2])
         # Note that the below is sequential, while the official implementation does a much faster parallel scan that is additionally hardware-aware (like FlashAttention).
