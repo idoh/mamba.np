@@ -34,7 +34,7 @@ If you use or discuss `mamba.np` in your academic research, please cite the proj
 
 # References
 Thank you to the creators of the following libraries and tools and their contributors:
-- [mamba-minimal](https://github.com/johnma2006/mamba-minima) - @johnma2006
+- [mamba-minimal](https://github.com/johnma2006/mamba-minimal) - @johnma2006
 - [llama3.np](https://github.com/likejazz/llama3.np) - @likejazz
 - The Mamba architecture was introduced in [Mamba: Linear-Time Sequence Modeling with Selective State Spaces](https://arxiv.org/abs/2312.00752) by [Albert Gu](https://twitter.com/_albertgu?lang=en) and [Tri Dao](https://twitter.com/tri_dao?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Eauthor)
 - The official implementation is here: https://github.com/state-spaces/mamba
