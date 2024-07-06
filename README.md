@@ -6,6 +6,10 @@
   <img src="assets/mamba.jpeg" width="300" alt="mamba.np">
 </p>
 
+## Installation
+
+Please refer to [Install.md](./Install.md) guide
+
 ## Usage
 
 ```shell
