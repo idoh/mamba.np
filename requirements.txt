@@ -1,2 +1,4 @@
 einops
 transformers
+ruff
+torch

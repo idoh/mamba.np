@@ -1,0 +1,8 @@
+line-length = 79
+
+[lint]
+select = ["E501", "I"]
+
+[format]
+docstring-code-format = true
+docstring-code-line-length = 200
