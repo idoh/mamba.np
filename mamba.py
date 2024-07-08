@@ -23,7 +23,7 @@ References:
         https://github.com/johnma2006/mamba-minimal/
     (2) llama3.np (Sang Park)
         https://github.com/likejazz/llama3.np
-"""
+""" # noqa: E501
 
 from __future__ import annotations
 
@@ -64,16 +64,23 @@ def load_model(pretrained_model_name: str) -> Mamba:
 
     def load_config_hf(model_name):
         resolved_archive_file = cached_file(
-            model_name, CONFIG_NAME, _raise_exceptions_for_missing_entries=False
+            model_name,
+            CONFIG_NAME,
+            _raise_exceptions_for_missing_entries=False,
         )
         return json.load(open(resolved_archive_file))
 
     def load_state_dict_hf(model_name):
         resolved_archive_file = cached_file(
-            model_name, WEIGHTS_NAME, _raise_exceptions_for_missing_entries=False
+            model_name,
+            WEIGHTS_NAME,
+            _raise_exceptions_for_missing_entries=False,
         )
         return torch.load(
-            resolved_archive_file, weights_only=True, map_location="cpu", mmap=True
+            resolved_archive_file,
+            weights_only=True,
+            map_location="cpu",
+            mmap=True,
         )
 
     config_data = load_config_hf(pretrained_model_name)
@@ -117,7 +124,7 @@ class ModelArgs:
     Notes:
         - If dt_rank is set to "auto", it computes it as the ceiling of d_model / 16.
         - Ensures that vocab_size is a multiple of pad_vocab_size_multiple.
-    """
+    """ # noqa: E501
 
     d_model: int
     n_layer: int
@@ -152,7 +159,9 @@ class Mamba:
         """
         self.args = args
         self.embedding = Embedding(weight=weights.get("embedding.weight"))
-        self.layers = [ResidualBlock(i, weights, args) for i in range(args.n_layer)]
+        self.layers = [
+            ResidualBlock(i, weights, args) for i in range(args.n_layer)
+        ]
         self.norm_f = RMSNorm(weight=weights.get("norm_f.weight"))
 
         # Tie output projection to embedding weights.
@@ -206,14 +215,16 @@ class ResidualBlock:
         self.args = args
         self.mixer = MambaBlock(
             in_proj=Linear(
-                weight=weights.get(f"layers.{layer_id}.mixer.in_proj.weight"), bias=None
+                weight=weights.get(f"layers.{layer_id}.mixer.in_proj.weight"),
+                bias=None,
             ),
             conv1d=MambaConv1d(
                 weight=weights.get(f"layers.{layer_id}.mixer.conv1d.weight"),
                 bias=weights.get(f"layers.{layer_id}.mixer.conv1d.bias"),
             ),
             x_proj=Linear(
-                weight=weights.get(f"layers.{layer_id}.mixer.x_proj.weight"), bias=None
+                weight=weights.get(f"layers.{layer_id}.mixer.x_proj.weight"),
+                bias=None,
             ),
             dt_proj=Linear(
                 weight=weights.get(f"layers.{layer_id}.mixer.dt_proj.weight"),
@@ -228,7 +239,9 @@ class ResidualBlock:
             args=args,
         )
 
-        self.norm = RMSNorm(weight=weights.get(f"layers.{layer_id}.norm.weight"))
+        self.norm = RMSNorm(
+            weight=weights.get(f"layers.{layer_id}.norm.weight")
+        )
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
         """
@@ -251,7 +264,7 @@ class ResidualBlock:
             We instead implement our blocks as the more familiar, simpler, and numerically equivalent
                 [Norm -> Mamba -> Add] -> [Norm -> Mamba -> Add] -> [Norm -> Mamba -> Add] -> ...
 
-        """
+        """ # noqa: E501
         output = self.mixer(self.norm(x)) + x
         return output
 
@@ -280,7 +293,7 @@ class MambaBlock:
             D (np.ndarray): shape (d_in,). Vector D.
             out_proj (Linear): shape (d_in, d). Linear layer for output projection.
             args (ModelArgs): Model-specific arguments.
-        """
+        """ # noqa: E501
         self.args = args
         self.in_proj: Linear = in_proj
         self.conv1d: MambaConv1d = conv1d
@@ -335,12 +348,12 @@ class MambaBlock:
         References:
             [1] Mamba paper: https://arxiv.org/abs/2106.16067
             [2] The Annotated S4: https://github.com/state-spaces/mamba/blob/main/mamba_ssm/modules/mamba_simple.py#L119
-        """
+        """ # noqa: E501
         (d_in, n) = self.A_log.shape
 
         # Compute ∆, A, B, C, D (state space parameters)
-        # A and D are input-independent (see Mamba paper [1], Section 3.5.2 for A's interpretation)
-        # ∆, B, C are input-dependent (a key difference between Mamba and linear time-invariant S4)
+        # A and D are input-independent (see Mamba paper [1], Section 3.5.2 for A's interpretation) # noqa: E501
+        # ∆, B, C are input-dependent (a key difference between Mamba and linear time-invariant S4) # noqa: E501
 
         A = -np.exp(self.A_log.astype(float))  # shape (d_in, n)
         D = self.D.astype(float)
@@ -354,7 +367,9 @@ class MambaBlock:
                 self.args.dt_rank + 2 * n,
             ),
             axis=-1,
-        )[:-1]  # delta: (b, l, dt_rank). B, C: (b, l, n)
+        )[
+            :-1
+        ]  # delta: (b, l, dt_rank). B, C: (b, l, n)
         delta = softplus(self.dt_proj(delta))  # (b, l, d_in)
 
         y = self.selective_scan(
@@ -403,16 +418,18 @@ class MambaBlock:
         References:
             [1] Mamba paper: https://arxiv.org/abs/2106.16067
             [2] The Annotated S4: https://github.com/state-spaces/mamba/blob/main/mamba_ssm/modules/mamba_simple.py#L119
-        """
+        """ # noqa: E501
         (b, l, d_in) = u.shape
         n = A.shape[1]
 
         # Discretize continuous parameters (A, B)
         deltaA = np.exp(einsum(delta, A, "b l d_in, d_in n -> b l d_in n"))
-        deltaB_u = einsum(delta, B, u, "b l d_in, b l n, b l d_in -> b l d_in n")
+        deltaB_u = einsum(
+            delta, B, u, "b l d_in, b l n, b l d_in -> b l d_in n"
+        )
 
         # Perform selective scan (see scan_SSM() in The Annotated S4 [2])
-        # Note that the below is sequential, while the official implementation does a much faster parallel scan that is additionally hardware-aware (like FlashAttention).
+        # Note that the below is sequential, while the official implementation does a much faster parallel scan that is additionally hardware-aware (like FlashAttention). # noqa: E501
         x = np.zeros((b, d_in, n))
         ys = []
         for i in range(l):
@@ -434,7 +451,7 @@ class MambaConv1d:
     Args:
         weight (np.ndarray): The weight tensor for the convolution layer.
         bias (np.ndarray or None): The bias tensor (optional). If None, no bias is applied.
-    """
+    """ # noqa: E501
 
     def __init__(self, weight: np.ndarray, bias: np.ndarray):
         self.weight = weight
@@ -449,7 +466,7 @@ class MambaConv1d:
 
         Returns:
             np.ndarray: Output tensor after 1D convolution.
-        """
+        """ # noqa: E501
         x = rearrange(x, "b l d_in -> b d_in l")
 
         batch_size, in_channels, length = x.shape
@@ -481,7 +498,7 @@ class Linear:
     Args:
         weight (np.ndarray): The weight matrix for the linear transformation.
         bias (np.ndarray or None): The bias vector (optional). If None, no bias is applied.
-    """
+    """ # noqa: E501
 
     def __init__(self, weight: np.ndarray, bias: np.ndarray):
         self.weight = weight
@@ -524,7 +541,7 @@ class Embedding:
 
         Returns:
             np.ndarray: The embedding vectors corresponding to the input indices.
-        """
+        """ # noqa: E501
         return self.weight[x]
 
 
@@ -536,7 +553,7 @@ class RMSNorm:
         Args:
             weight (np.ndarray): Weight vector for normalization.
             eps (float, optional): Small constant to prevent division by zero. Defaults to 1e-5.
-        """
+        """ # noqa: E501
         self.weight = weight
         self.eps = eps
 
@@ -564,7 +581,7 @@ def silu(x: np.ndarray) -> np.ndarray:
 
     Returns:
         np.ndarray: Output tensor after applying SiLU.
-    """
+    """ # noqa: E501
     return x / (1 + np.exp(-x))
 
 
@@ -611,7 +628,8 @@ def generate_text(model: Mamba, tokenizer: AutoTokenizer, prompt: str) -> None:
     # Calculate elapsed time and tokens per second
     elapsed = time.time() - start
     print(
-        f"\n\nToken count: {L}, elapsed: {elapsed:.2f}s, {round(L / elapsed)} tokens/s"
+        f"\n\nToken count: {L}, elapsed: {elapsed:.2f}s, {round(L / elapsed)} \
+            tokens/s"
     )
 
 
